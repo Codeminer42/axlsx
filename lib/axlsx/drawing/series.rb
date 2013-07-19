@@ -49,7 +49,53 @@ module Axlsx
       @title = v
     end
 
+    def error_x?
+      @error_x
+    end
+
+    def error_x=(opts)
+      initialize_errors
+      @error_x = true
+      @lower_errors[:x]  = opts[:lower]
+      @higher_errors[:x] = opts[:higher]
+    end
+
+
+    def error_y?
+      @error_y
+    end
+
+    def error_y=(opts)
+      initialize_errors
+      @error_y = true
+      @lower_errors[:y]  = opts[:lower]
+      @higher_errors[:y] = opts[:higher]
+    end
     private
+
+    def error_bars(val)
+      "<c:errBars>
+        <c:errDir val=\"#{val}\"/>
+        <c:errBarType val=\"both\"/>
+        <c:errValType val=\"cust\"/>
+        <c:noEndCap val=\"0\"/>
+        <c:plus>
+          <c:numRef>
+            <c:f>#{@lower_errors[val]}</c:f>
+          </c:numRef>
+        </c:plus>
+        <c:minus>
+          <c:numRef>
+            <c:f>#{@higher_errors[val]}</c:f>
+          </c:numRef>
+        </c:minus>
+      </c:errBars>"
+    end
+
+    def initialize_errors
+      @lower_errors ||= {}
+      @higher_errors ||= {}
+    end
 
     # assigns the chart for this series
     def chart=(v)  DataTypeValidator.validate "Series.chart", Chart, v; @chart = v; end
@@ -61,6 +107,8 @@ module Axlsx
       str << '<c:ser>'
       str << '<c:idx val="' << index.to_s << '"/>'
       str << '<c:order val="' << (order || index).to_s << '"/>'
+      str << error_bars(:x) if error_x?
+      str << error_bars(:y) if error_y?
       title.to_xml_string(str) unless title.nil?
       yield str if block_given?
       str << '</c:ser>'
